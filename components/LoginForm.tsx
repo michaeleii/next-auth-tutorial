@@ -1,10 +1,7 @@
 import { useRef, useState } from "react";
 
-import { getSession, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
-import { GetServerSideProps } from "next";
-import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { getServerSession } from "next-auth/next";
 
 async function createUser(email: string, password: string) {
   const res = await fetch("/api/auth/signup", {
@@ -92,18 +89,4 @@ function LoginForm() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req });
-  if (session) {
-    return {
-      redirect: {
-        destination: "/profile",
-        permanent: false,
-      },
-    };
-  }
-  return {
-    props: {},
-  };
-};
 export default LoginForm;

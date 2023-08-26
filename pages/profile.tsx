@@ -1,6 +1,8 @@
 import { getSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
 import { useRef } from "react";
+import { authOptions } from "@/services/auth";
+import { getServerSession } from "next-auth/next";
 
 function ProfilePage() {
   const oldPasswordRef = useRef<HTMLInputElement>(null);
@@ -60,8 +62,8 @@ function ProfilePage() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req });
+export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+  const session = await getServerSession(req, res, authOptions);
   if (!session) {
     return {
       redirect: {
@@ -71,7 +73,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     };
   }
   return {
-    props: { session },
+    props: {},
   };
 };
 
