@@ -1,10 +1,53 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+
+import { getSession, signIn } from "next-auth/react";
+import { useRouter } from "next/router";
+import { GetServerSideProps } from "next";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { getServerSession } from "next-auth/next";
+
+async function createUser(email: string, password: string) {
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Something went wrong");
+  }
+  return data;
+}
 
 function LoginForm() {
   const [isLogin, setIsLogin] = useState(true);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!emailInputRef.current || !passwordInputRef.current) return;
+
+    const enteredEmail = emailInputRef.current.value;
+    const enteredPassword = passwordInputRef.current.value;
+
+    if (isLogin) {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: enteredEmail,
+        password: enteredPassword,
+      });
+      if (result && !result.error) router.replace("/profile");
+      console.log(result);
+    } else {
+      try {
+        const result = await createUser(enteredEmail, enteredPassword);
+        console.log(result);
+      } catch (err) {
+        console.log(err);
+      }
+    }
   };
   return (
     <form className="card-body" onSubmit={handleSubmit}>
@@ -15,13 +58,21 @@ function LoginForm() {
         <label className="label">
           <span className="label-text">Your email</span>
         </label>
-        <input type="email" className="input input-bordered" name="" id="" />
+        <input
+          type="email"
+          className="input input-bordered"
+          ref={emailInputRef}
+        />
       </div>
       <div className="form-control w-full">
         <label className="label">
           <span className="label-text">Your password</span>
         </label>
-        <input type="password" className="input input-bordered" name="" id="" />
+        <input
+          type="password"
+          className="input input-bordered"
+          ref={passwordInputRef}
+        />
       </div>
       <div className="form-control mt-5">
         <button className="btn btn-primary">
@@ -40,4 +91,19 @@ function LoginForm() {
     </form>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const session = await getSession({ req });
+  if (session) {
+    return {
+      redirect: {
+        destination: "/profile",
+        permanent: false,
+      },
+    };
+  }
+  return {
+    props: {},
+  };
+};
 export default LoginForm;

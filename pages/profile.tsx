@@ -1,6 +1,29 @@
+import { getSession } from "next-auth/react";
+import { GetServerSideProps } from "next";
+import { useRef } from "react";
+
 function ProfilePage() {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const oldPasswordRef = useRef<HTMLInputElement>(null);
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!oldPasswordRef.current || !newPasswordRef.current) return;
+
+    const enteredOldPassword = oldPasswordRef.current.value;
+    const enteredNewPassword = newPasswordRef.current.value;
+
+    const res = await fetch("/api/user/change-password", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        oldPassword: enteredOldPassword,
+        newPassword: enteredNewPassword,
+      }),
+    });
+
+    const data = await res.json();
+    console.log(data);
   };
   return (
     <div className="max-w-7xl mx-auto p-5 mt-10">
@@ -16,8 +39,7 @@ function ProfilePage() {
           <input
             type="password"
             className="input input-bordered"
-            name=""
-            id=""
+            ref={oldPasswordRef}
           />
         </div>
         <div className="form-control w-full">
@@ -27,8 +49,7 @@ function ProfilePage() {
           <input
             type="password"
             className="input input-bordered"
-            name=""
-            id=""
+            ref={newPasswordRef}
           />
         </div>
         <div className="form-control mt-5">
@@ -38,4 +59,20 @@ function ProfilePage() {
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const session = await getSession({ req });
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
+  return {
+    props: { session },
+  };
+};
+
 export default ProfilePage;
